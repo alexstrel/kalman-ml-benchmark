@@ -31,6 +31,10 @@
 
 namespace stdex = std::experimental;
 
+#ifndef BSIZE
+#define BSIZE 32
+#endif
+
 #ifndef NOBS
 #define NOBS 8
 #endif
@@ -50,7 +54,7 @@ using ReduceTp = Float;
 constexpr int nobs     = NOBS;
 constexpr int fc_steps = FCSTEPS;
 
-constexpr int bSize = 32;
+constexpr int bSize = BSIZE;
 constexpr int D     = 8;
 
 using bFloatN  = std::array<Float, bSize*D >;
@@ -61,31 +65,31 @@ using indx_type     = int;
 using dyn_indx_type = size_t; 
 
 // Static objects views: 
-using LeftMtxView      =  stdex::mdspan<Float, stdex::extents<indx_type, D, D>, stdex::layout_left, stdex::default_accessor<Float>>;
-using LeftCMtxView     =  stdex::mdspan<const Float, stdex::extents<indx_type, D, D>, stdex::layout_left, stdex::default_accessor<const Float>>;
+using Left2DView      =  stdex::mdspan<Float, stdex::extents<indx_type, D, D>, stdex::layout_left, stdex::default_accessor<Float>>;
+using Left2DCView     =  stdex::mdspan<const Float, stdex::extents<indx_type, D, D>, stdex::layout_left, stdex::default_accessor<const Float>>;
 
-using RightMtxView     =  stdex::mdspan<Float, stdex::extents<indx_type, D, D>, stdex::layout_right, stdex::default_accessor<Float>>;
-using RightCMtxView    =  stdex::mdspan<const Float, stdex::extents<indx_type, D, D>, stdex::layout_right, stdex::default_accessor<const Float>>;
+using Right2DView     =  stdex::mdspan<Float, stdex::extents<indx_type, D, D>, stdex::layout_right, stdex::default_accessor<Float>>;
+using Right2DCView    =  stdex::mdspan<const Float, stdex::extents<indx_type, D, D>, stdex::layout_right, stdex::default_accessor<const Float>>;
 
-using StridedMtxView   =  stdex::mdspan<Float, stdex::extents<indx_type, D, D>, stdex::layout_stride, stdex::default_accessor<Float>>;
-using StridedCMtxView  =  stdex::mdspan<const Float, stdex::extents<indx_type, D, D>, stdex::layout_stride, stdex::default_accessor<const Float>>;
+using Strided2DView   =  stdex::mdspan<Float, stdex::extents<indx_type, D, D>, stdex::layout_stride, stdex::default_accessor<Float>>;
+using Strided2DCView  =  stdex::mdspan<const Float, stdex::extents<indx_type, D, D>, stdex::layout_stride, stdex::default_accessor<const Float>>;
 
-using ArrayView        =  stdex::mdspan<Float, stdex::extents<indx_type, D>, stdex::layout_left, stdex::default_accessor<Float>>;
-using CArrayView       =  stdex::mdspan<const Float, stdex::extents<indx_type, D>, stdex::layout_left, stdex::default_accessor<const Float>>;
+using Left1DView      =  stdex::mdspan<Float, stdex::extents<indx_type, D>, stdex::layout_left, stdex::default_accessor<Float>>;
+using Left1DCView     =  stdex::mdspan<const Float, stdex::extents<indx_type, D>, stdex::layout_left, stdex::default_accessor<const Float>>;
 
-using StridedArrayView  =  stdex::mdspan<Float, stdex::extents<indx_type, D>, stdex::layout_stride>;
-using StridedCArrayView =  stdex::mdspan<const Float, stdex::extents<indx_type, D>, stdex::layout_stride>;
+using Strided1DView   =  stdex::mdspan<Float, stdex::extents<indx_type, D>, stdex::layout_stride>;
+using Strided1DCView  =  stdex::mdspan<const Float, stdex::extents<indx_type, D>, stdex::layout_stride>;
 
 // Dynamic objects views:
-using StridedDynArrayView  = stdex::mdspan<Float, stdex::extents<dyn_indx_type, stdex::dynamic_extent>, stdex::layout_stride>;
-using StridedDynCArrayView = stdex::mdspan<const Float, stdex::extents<dyn_indx_type, stdex::dynamic_extent>, stdex::layout_stride>;
+using StridedDyn1DView  = stdex::mdspan<Float, stdex::extents<dyn_indx_type, stdex::dynamic_extent>, stdex::layout_stride>;
+using StridedDyn1DCView = stdex::mdspan<const Float, stdex::extents<dyn_indx_type, stdex::dynamic_extent>, stdex::layout_stride>;
 
 // Static mapping for strided objects
-using StaticArrayMap = stdex::layout_stride::mapping<stdex::extents<indx_type, D>>;
-using StaticMtxMap   = stdex::layout_stride::mapping<stdex::extents<indx_type, D, D>>;
+using Static1DMap = stdex::layout_stride::mapping<stdex::extents<indx_type, D>>;
+using Static2DMap = stdex::layout_stride::mapping<stdex::extents<indx_type, D, D>>;
 
 // Dynamic mapping for strided objects:
-using DynArrayMap    = stdex::layout_stride::mapping<stdex::extents<dyn_indx_type, stdex::dynamic_extent>>;
+using Dyn1DMap    = stdex::layout_stride::mapping<stdex::extents<dyn_indx_type, stdex::dynamic_extent>>;
 
 
 //! Thread-local Matrix-Vector multiplication.
@@ -126,27 +130,27 @@ inline void MM(out_mat_t out, const in_mat1_t A, const in_mat2_t B)
 
 template<int d> 
 inline decltype(auto) 
-kalman_update(ArrayView &a, 
-	      StridedDynArrayView &vs_, 
-	      LeftMtxView &t,  
-	      LeftMtxView &p, 
-	      StridedDynArrayView &Fs_, 
-	      const StridedDynCArrayView &ys_, 
-	      const LeftCMtxView &rqr, 
-	      const ArrayView &z, 
+kalman_update(Left1DView &a, 
+	      StridedDyn1DView &vs_, 
+	      Left2DView &t,  
+	      Left2DView &p, 
+	      StridedDyn1DView &Fs_, 
+	      const StridedDyn1DCView &ys_, 
+	      const Left2DCView &rqr, 
+	      const Left1DView &z, 
 	      const Float mu, 
 	      const int n_diff,
 	      const int nseries,	       
 	      const int nobs){
   
   std::array<Float, d>  k_;
-  ArrayView k(k_.data()); 
+  Left1DView k(k_.data()); 
   //
   std::array<Float, d*d> tp_;
-  LeftMtxView tp(tp_.data());   
+  Left2DView tp(tp_.data());   
   //  
   std::array<Float, d*d> l_tmp_;
-  LeftMtxView l_tmp(l_tmp_.data());     
+  Left2DView l_tmp(l_tmp_.data());     
     
   Float b_sum_logFs = 0.0;
     
@@ -157,7 +161,7 @@ kalman_update(ArrayView &a,
       vs_it -= a(0);
     } else {
 #pragma unroll      
-      for (int i = 0; i < d; i++) {
+      for (int i = 0; i < a.extent(0); i++) {
         vs_it -= a(i) * z(i);
       }
     }
@@ -168,9 +172,9 @@ kalman_update(ArrayView &a,
       
     if (n_diff != 0){
 #pragma unroll        
-      for (int i = 0; i < d; i++) {
+      for (int i = 0; i < p.extent(0); i++) {
 #pragma unroll           
-        for (int j = 0; j < d; j++) {
+        for (int j = 0; j < p.extent(1); j++) {
           _Fs += p(i, j) * z(i) * z(j);
         }
       }
@@ -186,7 +190,7 @@ kalman_update(ArrayView &a,
     Float _1_Fs = 1.0 / _Fs;
     if (n_diff == 0) {
 #pragma unroll      
-      for (int i = 0; i < d; i++) {
+      for (int i = 0; i < k.extent(0); i++) {
         k(i) = _1_Fs * tp(i, 0);
       }
     } else {
@@ -199,7 +203,7 @@ kalman_update(ArrayView &a,
     MV(l_tmp_col, t, a);
     // alpha = tmp + K*vs[it]
 #pragma unroll      
-    for (int i = 0; i < d; i++) {
+    for (int i = 0; i < a.extent(0); i++) {
       a(i) = l_tmp_col(i) + k(i) * vs_it;
     }
     // alpha = alpha + c
@@ -208,23 +212,23 @@ kalman_update(ArrayView &a,
     // 5. L = T - K * Z
     // L = T (L is tmp)
 #pragma unroll      
-    for (int i = 0; i < d; i++) {
+    for (int i = 0; i < l_tmp.extent(0); i++) {
 #pragma unroll    
-      for (int j = 0; j < d; j++) {
+      for (int j = 0; j < l_tmp.extent(1); j++) {
         l_tmp(i, j) = t(i,j);
       }
     }
     // L = L - K * Z
     if (n_diff == 0) {
 #pragma unroll      
-      for (int i = 0; i < d; i++) {
+      for (int i = 0; i < l_tmp.extent(0); i++) {
         l_tmp(i,0) -= k(i);
       }
     } else {
 #pragma unroll      
-      for (int i = 0; i < d; i++) {
+      for (int i = 0; i < l_tmp.extent(0); i++) {
 #pragma unroll        
-        for (int j = 0; j < d; j++) {
+        for (int j = 0; j < l_tmp.extent(1); j++) {
           l_tmp(i,j) -= k(i) * z(j);
         }
       }
@@ -232,14 +236,14 @@ kalman_update(ArrayView &a,
 
     // 6. P = T*P*L' + R*Q*R'
     // P = TP*L'
-    RightCMtxView l_tmp_transp(l_tmp_.data());
+    Right2DCView l_tmp_transp(l_tmp_.data());
     //    
     MM(p, tp, l_tmp_transp);
     // P = P + RQR
 #pragma unroll      
-    for (int i = 0; i < d; i++) {
+    for (int i = 0; i < p.extent(0); i++) {
 #pragma unroll    
-      for (int j = 0; j < d; j++) {
+      for (int j = 0; j < p.extent(1); j++) {
         p(i,j) += rqr(i,j);
       }
     }
@@ -250,23 +254,23 @@ kalman_update(ArrayView &a,
 
 template<int d, bool conf_int> 
 inline void 
-kalman_forecast(ArrayView &a, 
-	        StridedDynArrayView &fc_, 
-	        LeftMtxView &t,  
-	        LeftMtxView &p,
-	        StridedDynArrayView &F_fc_,  
-	        const LeftCMtxView &rqr, 
-	        const CArrayView &z, 
+kalman_forecast(Left1DView &a, 
+	        StridedDyn1DView &fc_, 
+	        Left2DView &t,  
+	        Left2DView &p,
+	        StridedDyn1DView &F_fc_,  
+	        const Left2DCView &rqr, 
+	        const Left1DCView &z, 
 	        const Float mu, 
 	        const int n_diff,
 	        const int nseries, 
 	        const int fc_steps){
   
   std::array<Float, d*d> tp_;
-  LeftMtxView tp(tp_.data());   
+  Left2DView tp(tp_.data());   
   //  
   std::array<Float, d*d> l_tmp_;
-  LeftMtxView l_tmp(l_tmp_.data());  
+  Left2DView l_tmp(l_tmp_.data());  
    
   for (int it = 0; it < fc_steps; it++) {
 
@@ -275,7 +279,7 @@ kalman_forecast(ArrayView &a,
     } else {
       Float pred = a(0) * z(0);
 #pragma unroll        
-      for (int i = 1; i < d; i++) {
+      for (int i = 1; i < a.extent(0); i++) {
         pred += a(i) * z(i);
       }
       fc_(it) = pred;
@@ -285,7 +289,7 @@ kalman_forecast(ArrayView &a,
     auto l_tmp_col = stdex::submdspan(l_tmp, std::experimental::full_extent, 0);
     MV(l_tmp_col, t, a);
 #pragma unroll      
-    for (int i = 0; i < d; i++) {
+    for (int i = 0; i < a.extent(0); i++) {
       a(i) = l_tmp_col(i);
     }
     a[n_diff] += mu;
@@ -296,9 +300,9 @@ kalman_forecast(ArrayView &a,
       } else {
         Float _Fs = 0.0;
 #pragma unroll          
-        for (int i = 0; i < d; i++) {
+        for (int i = 0; i < p.extent(0); i++) {
 #pragma unroll          
-          for (int j = 0; j < d; j++) {
+          for (int j = 0; j < p.extent(1); j++) {
             _Fs += p(i , j) * z(i) * z(j);
           }
         }
@@ -309,13 +313,13 @@ kalman_forecast(ArrayView &a,
       // TP = T*P
       MM(tp, t, p);
       // P = TP*T'
-      RightCMtxView t_transp(t.data_handle());    
+      Right2DCView t_transp(t.data_handle());    
       MM(p, tp, t_transp);      
       // P = P + RR'
 #pragma unroll      
-      for (int i = 0; i < d; i++) {
+      for (int i = 0; i < p.extent(0); i++) {
 #pragma unroll    
-        for (int j = 0; j < d; j++) {
+        for (int j = 0; j < p.extent(1); j++) {
           p(i,j) += rqr(i,j);
         }
       }
@@ -430,31 +434,31 @@ int main(int argc, char* argv[]) {
                               
                               // First, create local objects and views:
                               std::array<Float, D*D> rqr;
-                              const LeftMtxView rqr_{rqr.data()};
+                              const Left2DView rqr_{rqr.data()};
                               //
                               std::array<Float, D*D> t;//
-                              LeftMtxView    t_{t.data()};//
+                              Left2DView    t_{t.data()};//
                               //
                               std::array<Float, D>  z;
-                              const ArrayView z_{z.data()};
+                              const Left1DView z_{z.data()};
                               // 
                               std::array<Float, D*D> p;
-                              LeftMtxView    p_{p.data()};//
+                              Left2DView    p_{p.data()};//
                               //
                               std::array<Float, D>  a;
-                              ArrayView       a_{a.data()};//                              
+                              Left1DView       a_{a.data()};//                              
 
                               // Load global mem into registers 
-                              auto RQR_ = StridedCMtxView{ RQR[tid].data() + batch_id,
-                                                           StaticMtxMap(stdex::extents<indx_type, D, D>{}, 
+                              auto RQR_ = Strided2DCView{ RQR[tid].data() + batch_id,
+                                                           Static2DMap(stdex::extents<indx_type, D, D>{}, 
                                                                         std::array<indx_type, 2>{bSize, bSize*D}) };
                               //
-                              auto T_   = StridedCMtxView{ T[tid].data() + batch_id,
-                                                           StaticMtxMap(stdex::extents<indx_type, D, D>{}, 
+                              auto T_   = Strided2DCView{ T[tid].data() + batch_id,
+                                                           Static2DMap(stdex::extents<indx_type, D, D>{}, 
                                                                         std::array<indx_type, 2>{bSize, bSize*D}) };
                               //
-                              auto P_   = StridedCMtxView{ P[tid].data() + batch_id,
-                                                           StaticMtxMap(stdex::extents<indx_type, D, D>{}, 
+                              auto P_   = Strided2DCView{ P[tid].data() + batch_id,
+                                                           Static2DMap(stdex::extents<indx_type, D, D>{}, 
                                                                         std::array<indx_type, 2>{bSize, bSize*D}) };                              
 #pragma unroll    
                               for (int i = 0; i < D; i++) {
@@ -466,12 +470,12 @@ int main(int argc, char* argv[]) {
                                 }
                               }
                               
-                              auto Z_    = StridedCArrayView{ Z[tid].data() + batch_id,
-                                                              StaticArrayMap(stdex::extents<indx_type, D>{}, 
+                              auto Z_    = Strided1DCView{ Z[tid].data() + batch_id,
+                                                              Static1DMap(stdex::extents<indx_type, D>{}, 
                                                                              std::array<indx_type, 1>{bSize}) };
                               //
-                              auto alpha_= StridedCArrayView{ alpha[tid].data() + batch_id,
-                                                              StaticArrayMap(stdex::extents<indx_type, D>{}, 
+                              auto alpha_= Strided1DCView{ alpha[tid].data() + batch_id,
+                                                              Static1DMap(stdex::extents<indx_type, D>{}, 
                                                                              std::array<indx_type, 1>{bSize}) };                              
 #pragma unroll    
                               for (int i = 0; i < D; i++) {;                               
@@ -479,17 +483,17 @@ int main(int argc, char* argv[]) {
                                 a_(i)                 = alpha_(i);
                               }
 
-                              auto ys_ = StridedDynCArrayView( ys + idx, 
-                                                               DynArrayMap(stdex::extents<dyn_indx_type, stdex::dynamic_extent>{nobs}, 
+                              auto ys_ = StridedDyn1DCView( ys + idx, 
+                                                               Dyn1DMap(stdex::extents<dyn_indx_type, stdex::dynamic_extent>{nobs}, 
                                                                            std::array<dyn_indx_type, 1>{nseries}) );
                                                                          
                               //
-                              auto vs_ = StridedDynArrayView{  vs + idx, 
-                                                               DynArrayMap(stdex::extents<dyn_indx_type, stdex::dynamic_extent>{nobs}, 
+                              auto vs_ = StridedDyn1DView{  vs + idx, 
+                                                               Dyn1DMap(stdex::extents<dyn_indx_type, stdex::dynamic_extent>{nobs}, 
                                                                            std::array<dyn_indx_type, 1>{nseries}) };                               
 
-                              auto Fs_ = StridedDynArrayView{  Fs + idx, 
-                                                               DynArrayMap(stdex::extents<dyn_indx_type, stdex::dynamic_extent>{nobs}, 
+                              auto Fs_ = StridedDyn1DView{  Fs + idx, 
+                                                               Dyn1DMap(stdex::extents<dyn_indx_type, stdex::dynamic_extent>{nobs}, 
                                                                            std::array<dyn_indx_type, 1>{nseries}) };                              
 
                               Float mu_ = intercept ? mu[idx] : 0.0;
@@ -497,11 +501,11 @@ int main(int argc, char* argv[]) {
                               Float sum_logFs_ = kalman_update<D>(a_, vs_, t_, p_, Fs_, ys_, rqr_, z_, mu_, n_diff, nseries, nobs);
 
                               // Forecast
-                              auto fc_   = StridedDynArrayView{ fc_steps ? fc + idx : nullptr, 
-                                                                DynArrayMap(stdex::extents<dyn_indx_type, stdex::dynamic_extent>{fc_steps}, 
+                              auto fc_   = StridedDyn1DView{ fc_steps ? fc + idx : nullptr, 
+                                                                Dyn1DMap(stdex::extents<dyn_indx_type, stdex::dynamic_extent>{fc_steps}, 
                                                                             std::array<dyn_indx_type, 1>{nseries}) };                              
-                              auto F_fc_ = StridedDynArrayView{ forecast ? F_fc + idx : nullptr, 
-                                                                DynArrayMap(stdex::extents<dyn_indx_type, stdex::dynamic_extent>{fc_steps}, 
+                              auto F_fc_ = StridedDyn1DView{ forecast ? F_fc + idx : nullptr, 
+                                                                Dyn1DMap(stdex::extents<dyn_indx_type, stdex::dynamic_extent>{fc_steps}, 
                                                                             std::array<dyn_indx_type, 1>{nseries}) };                               
 
                               kalman_forecast<D, forecast>(a_, fc_, t_, p_, F_fc_, rqr_, z_, mu_, n_diff, nseries, fc_steps);
