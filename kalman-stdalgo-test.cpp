@@ -397,7 +397,27 @@ kalman_forecast(Left1DView &a,
     }
   }//end for
 }    
-
+//
+template<int d, int bsize>
+class KalmanAlgo{
+   //	
+   std::array<Float, bsize*d*d>* RQR;
+   std::array<Float, bsize*d*d>* T;
+   std::array<Float, bsize*d*d>* P;
+   std::array<Float, bsize*d>*   Z;
+   std::array<Float, bsize*d>*   alpha;
+   //
+   Float* ys;
+   Float* mu;
+   //
+   Float* vs;
+   Float* Fs;
+   //
+   Float* sum_logFs;
+   //
+   Float* fc;
+   Float* F_fc;
+};
 //
 constexpr bool intercept = true;
 constexpr bool forecast  = true;
