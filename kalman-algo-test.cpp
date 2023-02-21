@@ -416,41 +416,29 @@ int main(int argc, char* argv[]) {
   std::default_random_engine gen;
   std::uniform_real_distribution<Float> dist(0.0,1.0);
 
-  auto _RQR = GenericContainerWrapper<std::vector<bFloatNN>>(bnseries, gen, dist);
-  auto RQR  = _RQR.Get();
+  auto RQR = std::make_shared<GenericContainerWrapper<std::vector<bFloatNN>>>(bnseries, gen, dist);
 
-  auto _T   = GenericContainerWrapper<std::vector<bFloatNN>>(bnseries, gen, dist);
-  auto T    = _T.Get();
+  auto T   = std::make_shared<GenericContainerWrapper<std::vector<bFloatNN>>>(bnseries, gen, dist);
 
-  auto _P   = GenericContainerWrapper<std::vector<bFloatNN>>(bnseries, gen, dist);
-  auto P    = _P.Get();
+  auto P   = std::make_shared<GenericContainerWrapper<std::vector<bFloatNN>>>(bnseries, gen, dist);
   
-  auto _Z   = GenericContainerWrapper<std::vector<bFloatN>>(bnseries, gen, dist);
-  auto Z    = _Z.Get();
+  auto Z   = std::make_shared<GenericContainerWrapper<std::vector<bFloatN>>>(bnseries, gen, dist);
   
-  auto _alpha = GenericContainerWrapper<std::vector<bFloatN>>(bnseries, gen, dist);
-  auto alpha  = _alpha.Get();
+  auto alpha = std::make_shared<GenericContainerWrapper<std::vector<bFloatN>>>(bnseries, gen, dist);
   
-  auto _ys = GenericContainerWrapper<std::vector<Float1>>(nseries*nobs, gen, dist);
-  auto ys  = _ys.Get();
+  auto ys = std::make_shared<GenericContainerWrapper<std::vector<Float1>>>(nseries*nobs, gen, dist);
   
-  auto _mu = GenericContainerWrapper<std::vector<Float1>>(nseries, gen, dist);
-  auto mu  = _mu.Get();
+  auto mu = std::make_shared<GenericContainerWrapper<std::vector<Float1>>>(nseries, gen, dist);
 
-  auto _vs = GenericContainerWrapper<std::vector<Float1>>(nseries*nobs);
-  auto vs  = _vs.Get();  
+  auto vs = std::make_shared<GenericContainerWrapper<std::vector<Float1>>>(nseries*nobs);
 
-  auto _Fs = GenericContainerWrapper<std::vector<Float1>>(nseries*nobs);
-  auto Fs  = _Fs.Get();  
+  auto Fs = std::make_shared<GenericContainerWrapper<std::vector<Float1>>>(nseries*nobs);
   //
-  auto _sum_logFs = GenericContainerWrapper<std::vector<Float1>>(nseries);
-  auto sum_logFs  = _sum_logFs.Get();
+  auto sum_logFs = std::make_shared<GenericContainerWrapper<std::vector<Float1>>>(nseries);
   //
-  auto _fc = GenericContainerWrapper<std::vector<Float1>>(nseries * fc_steps);
-  auto fc  = _fc.Get();  
+  auto fc = std::make_shared<GenericContainerWrapper<std::vector<Float1>>>(nseries * fc_steps);
   //
-  auto _F_fc = GenericContainerWrapper<std::vector<Float1>>(nseries * fc_steps);
-  auto F_fc  = _F_fc.Get();
+  auto F_fc = std::make_shared<GenericContainerWrapper<std::vector<Float1>>>(nseries * fc_steps);
 
   /**
   * Kalman loop kernel. Each thread computes kalman filter for a single series
@@ -494,9 +482,9 @@ int main(int argc, char* argv[]) {
                               // Load global mem into registers 
 			      //
                               auto RQR_ = RQR.Accessor<D, D>(tid, batch_id, {bSize, bSize*D});                                                                                         //
-                              auto T_   = T.Accessor<D, D>(tid, batch_id, {bSize, bSize*D});
+                              auto T_   =   T.Accessor<D, D>(tid, batch_id, {bSize, bSize*D});
                               //
-                              auto P_   = P.Accessor<D, D>(tid, batch_id, {bSize, bSize*D});
+                              auto P_   =   P.Accessor<D, D>(tid, batch_id, {bSize, bSize*D});
 #pragma unroll    
                               for (int i = 0; i < D; i++) {
 #pragma unroll                              
