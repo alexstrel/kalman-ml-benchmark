@@ -84,9 +84,9 @@ constexpr int fc_steps = FCSTEPS;
 constexpr int bSize = BSIZE;
 constexpr int D     = 8;
 
-using bFloatN  = std::array<Float, bSize*D >;
-using bFloatNN = std::array<Float, bSize*D*D>;
-using Float1   = std::array<Float, 1>;
+using vFloatN  = std::vector<std::array<Float, bSize*D >>;
+using vFloatNN = std::vector<std::array<Float, bSize*D*D>>;
+using vFloat1  = std::vector<std::array<Float, 1>>;
 
 //
 using indx_type     = int; 
@@ -140,14 +140,14 @@ inline void MM(out_mat_t out, const in_mat1_t A, const in_mat2_t B)
 
 template<int d> 
 inline decltype(auto) 
-kalman_update(Left1DView &a, 
+kalman_update(auto &a, 
 	      auto &vs_,
-	      Left2DView &t,  
-	      Left2DView &p, 
+	      auto &t,  
+	      auto &p, 
 	      auto &Fs_, 
 	      const auto &ys_,
-	      const Left2DCView &rqr, 
-	      const Left1DView &z, 
+	      const auto &rqr, 
+	      const auto &z, 
 	      const Float mu, 
 	      const int n_diff,
 	      const int nseries,	       
@@ -264,13 +264,13 @@ kalman_update(Left1DView &a,
 
 template<int d, bool conf_int> 
 inline void 
-kalman_forecast(Left1DView &a, 
+kalman_forecast(auto &a, 
 		auto &fc_,
-	        Left2DView &t,  
-	        Left2DView &p,
+	        auto &t,  
+	        auto &p,
 		auto &F_fc_,
-	        const Left2DCView &rqr, 
-	        const Left1DCView &z, 
+	        const auto &rqr, 
+	        const auto &z, 
 	        const Float mu, 
 	        const int n_diff,
 	        const int nseries, 
@@ -416,29 +416,29 @@ int main(int argc, char* argv[]) {
   std::default_random_engine gen;
   std::uniform_real_distribution<Float> dist(0.0,1.0);
 
-  auto RQR = std::make_shared<GenericContainerWrapper<std::vector<bFloatNN>>>(bnseries, gen, dist);
+  auto RQR = std::make_shared<GenericContainerWrapper<vFloatNN>>(bnseries, gen, dist);
 
-  auto T   = std::make_shared<GenericContainerWrapper<std::vector<bFloatNN>>>(bnseries, gen, dist);
+  auto T   = std::make_shared<GenericContainerWrapper<vFloatNN>>(bnseries, gen, dist);
 
-  auto P   = std::make_shared<GenericContainerWrapper<std::vector<bFloatNN>>>(bnseries, gen, dist);
+  auto P   = std::make_shared<GenericContainerWrapper<vFloatNN>>(bnseries, gen, dist);
   
-  auto Z   = std::make_shared<GenericContainerWrapper<std::vector<bFloatN>>>(bnseries, gen, dist);
+  auto Z   = std::make_shared<GenericContainerWrapper<vFloatN>>(bnseries, gen, dist);
   
-  auto alpha = std::make_shared<GenericContainerWrapper<std::vector<bFloatN>>>(bnseries, gen, dist);
+  auto alpha = std::make_shared<GenericContainerWrapper<vFloatN>>(bnseries, gen, dist);
   
-  auto ys = std::make_shared<GenericContainerWrapper<std::vector<Float1>>>(nseries*nobs, gen, dist);
+  auto ys = std::make_shared<GenericContainerWrapper<vFloat1>>(nseries*nobs, gen, dist);
   
-  auto mu = std::make_shared<GenericContainerWrapper<std::vector<Float1>>>(nseries, gen, dist);
+  auto mu = std::make_shared<GenericContainerWrapper<vFloat1>>(nseries, gen, dist);
 
-  auto vs = std::make_shared<GenericContainerWrapper<std::vector<Float1>>>(nseries*nobs);
+  auto vs = std::make_shared<GenericContainerWrapper<vFloat1>>(nseries*nobs);
 
-  auto Fs = std::make_shared<GenericContainerWrapper<std::vector<Float1>>>(nseries*nobs);
+  auto Fs = std::make_shared<GenericContainerWrapper<vFloat1>>(nseries*nobs);
   //
-  auto sum_logFs = std::make_shared<GenericContainerWrapper<std::vector<Float1>>>(nseries);
+  auto sum_logFs = std::make_shared<GenericContainerWrapper<vFloat1>>(nseries);
   //
-  auto fc = std::make_shared<GenericContainerWrapper<std::vector<Float1>>>(nseries * fc_steps);
+  auto fc = std::make_shared<GenericContainerWrapper<vFloat1>>(nseries * fc_steps);
   //
-  auto F_fc = std::make_shared<GenericContainerWrapper<std::vector<Float1>>>(nseries * fc_steps);
+  auto F_fc = std::make_shared<GenericContainerWrapper<vFloat1>>(nseries * fc_steps);
 
   /**
   * Kalman loop kernel. Each thread computes kalman filter for a single series
