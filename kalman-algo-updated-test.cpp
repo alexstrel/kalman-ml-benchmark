@@ -53,21 +53,9 @@ using ReduceTp = Float;
 
 // Simple arithmetic type
 template <typename T>
-concept FloatTp = requires{
+concept ArithmeticTp = requires{
   requires std::is_floating_point_v<T>;
 };
-
-// Simple complex type
-template <typename T>
-concept ComplexTp    = requires (T t) {
-  requires FloatTp<decltype(t.real())>;
-  requires FloatTp<decltype(t.imag())>;  
-};
-
-// Simple genetic arithmetic type
-template <typename T>
-concept ArithmeticTp = FloatTp<T> || ComplexTp<T>;
-
 
 // Generic container type:
 template <typename T>
